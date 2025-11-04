@@ -1,0 +1,254 @@
+================================================================================
+SMART TRAFFIC MANAGEMENT DATASET - PREPROCESSING DOCUMENTATION
+================================================================================
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+Input: smart_traffic_management_dataset.csv (2000 samples, 12 features)
+Output: 3-way split (70-15-15) in both PICKLE and CSV formats
+
+================================================================================
+2. PREPROCESSING STEPS PERFORMED
+================================================================================
+
+Step 1: Temporal Feature Extraction
+   - hour: Hour of day (0-23) extracted from timestamp
+   - minute: Minute of hour (0-59) 
+   - day_of_week: Day of week (0=Monday, 6=Sunday)
+   - is_peak_hour: Binary flag for peak hours (7-10 AM, 5-8 PM)
+
+Step 2: Feature Engineering
+   - queue_length = traffic_volume / (avg_vehicle_speed + 1e-5)
+   - vehicle_density = cars + trucks + bikes
+   - congestion_index = (normalized traffic / normalized speed)
+   - heavy_vehicle_ratio = trucks / total_vehicles
+   - bike_ratio = bikes / total_vehicles
+   - weather_impact = (humidity/100) * (temperature/max_temp)
+
+Step 3: Categorical Encoding
+   - weather_condition: One-hot encoded into 5 binary columns
+     (Cloudy, Foggy, Rainy, Sunny, Windy)
+   - signal_status: One-hot encoded into 3 binary columns
+     (Green, Red, Yellow)
+
+Step 4: Normalization
+   - All 18 numerical features scaled to [0, 1] using Min-Max scaling
+   - Preserves distribution shape
+   - Ensures uniform feature contribution to RL agent
+
+Step 5: Dataset Split
+   - Training: 70% (1,400 samples)
+   - Validation: 15% (300 samples)
+   - Test: 15% (300 samples)
+   - Random shuffle with seed=42 for reproducibility
+
+================================================================================
+3. OUTPUT FILES GENERATED
+================================================================================
+
+PICKLE FORMAT (for RL training):
+
+1. train_data.pkl 
+   Contents:
+   - X_train: State vectors (1400, 26)
+   - y_accident_train: Emergency vehicle labels
+   - y_signal_train: Signal status labels
+   - feature_names: List of 26 feature names
+   - scaler: Fitted MinMaxScaler object
+   - state_dim: 26
+
+2. val_data.pkl 
+   Contents:
+   - X_val: State vectors (300, 26)
+   - y_accident_val: Emergency vehicle labels
+   - y_signal_val: Signal status labels
+   - feature_names: List of feature names
+   - state_dim: 26
+
+3. test_data.pkl 
+   Contents:
+   - X_test: State vectors (300, 26)
+   - y_accident_test: Emergency vehicle labels
+   - y_signal_test: Signal status labels
+   - feature_names: List of feature names
+   - state_dim: 26
+
+4. scaler.pkl
+   Contents: Fitted MinMaxScaler for normalizing new observations
+
+CSV FORMAT (for analysis/SUMO integration):
+
+1. train_data.csv (1,400 rows × 30 columns)
+   - All original features
+   - All engineered features
+   - One-hot encoded categorical features
+   - Normalized numerical values
+
+2. val_data.csv (300 rows × 30 columns)
+   - Same structure as train_data.csv
+
+3. test_data.csv (300 rows × 30 columns)
+   - Same structure as train_data.csv
+
+4. full_preprocessed_data.csv (2,000 rows × 30 columns)
+   - Complete dataset with all preprocessing applied
+
+================================================================================
+4. STATE REPRESENTATION (26-DIMENSIONAL)
+================================================================================
+
+Numerical Features (18):
+------------------------
+0.  location_id - Traffic light location identifier
+1.  traffic_volume - Number of vehicles
+2.  avg_vehicle_speed - Average speed of vehicles
+3.  vehicle_count_cars - Count of cars
+4.  vehicle_count_trucks - Count of trucks
+5.  vehicle_count_bikes - Count of bikes
+6.  temperature - Ambient temperature
+7.  humidity - Ambient humidity percentage
+8.  hour - Hour of day (0-23)
+9.  minute - Minute of hour (0-59)
+10. day_of_week - Day index (0-6)
+11. is_peak_hour - Peak hour flag (0/1)
+12. queue_length - Computed queue metric
+13. vehicle_density - Total vehicle count
+14. congestion_index - Congestion severity metric
+15. heavy_vehicle_ratio - Proportion of trucks
+16. bike_ratio - Proportion of bikes
+17. weather_impact - Combined weather effect
+
+Categorical Features (8):
+-------------------------
+18. weather_Cloudy - Binary flag
+19. weather_Foggy - Binary flag
+20. weather_Rainy - Binary flag
+21. weather_Sunny - Binary flag
+22. weather_Windy - Binary flag
+23. signal_Green - Binary flag
+24. signal_Red - Binary flag
+25. signal_Yellow - Binary flag
+
+Target Variables:
+-----------------
+- accident_reported: Emergency vehicle presence (0/1)
+- signal_status: Current signal phase (Green/Red/Yellow)
+
+================================================================================
+5. HOW TO USE THE FILES
+================================================================================
+
+Loading PICKLE files for RL Training:
+
+from load_data import load_train_data, load_val_data, load_test_data
+
+# Load training data
+train = load_train_data()
+X_train = train['X_train']
+y_accident_train = train['y_accident_train']
+y_signal_train = train['y_signal_train']
+
+# Load validation data
+val = load_val_data()
+X_val = val['X_val']
+
+# Load test data
+test = load_test_data()
+X_test = test['X_test']
+
+Loading CSV files for Analysis:
+
+import pandas as pd
+
+train_df = pd.read_csv('train_data.csv')
+val_df = pd.read_csv('val_data.csv')
+test_df = pd.read_csv('test_data.csv')
+
+
+================================================================================
+6. TROUBLESHOOTING
+================================================================================
+
+Issue: FileNotFoundError when loading pickle files
+Solution: Ensure script runs in same directory as .pkl files
+
+Issue: Shape mismatch in state vectors
+Solution: Verify all 26 features present and correctly ordered
+
+Issue: Normalization errors on new data
+Solution: Use saved scaler.pkl to transform new observations
+
+Issue: SUMO connection timeout
+Solution: Check SUMO installation and TraCI configuration
+
+Issue: Poor RL agent performance
+Solution: 
+  - Adjust reward function weights
+  - Increase training timesteps
+  - Try different RL algorithms
+  - Check state representation completeness
+
+================================================================================
+7. DATASET STATISTICS
+================================================================================
+
+Total Samples: 2,000
+Training: 1,400 (70.0%)
+Validation: 300 (15.0%)
+Test: 300 (15.0%)
+
+State Dimension: 26 features
+- Numerical: 18
+- Categorical: 8
+
+Original Features: 12
+Engineered Features: 6
+One-hot Encoded: 8
+Total Features in CSV: 30
+
+Temporal Coverage: 33+ hours of minute-level traffic data
+Locations: 5 unique traffic light locations
+Weather Conditions: 5 types
+Signal States: 3 phases
+Emergency Events: 108 accidents (5.4% rate)
+
+================================================================================
+8. REFERENCES AND RESOURCES
+================================================================================
+
+Frameworks:
+- SUMO: https://www.eclipse.org/sumo/
+- TraCI API: https://sumo.dlr.de/docs/TraCI.html
+- Stable Baselines3: https://stable-baselines3.readthedocs.io/
+- PyTorch: https://pytorch.org/
+
+Documentation:
+- SUMO Traffic Light Control: https://sumo.dlr.de/docs/Simulation/Traffic_Lights.html
+- Gym Environment API: https://gymnasium.farama.org/
+
+Sample Projects:
+- SUMO-RL: https://github.com/LucasAlegre/sumo-rl
+- Traffic Signal Control Benchmarks: https://traffic-signal-control.github.io/
+
+================================================================================
+9. SUPPORT
+================================================================================
+
+
+Project Structure:
+------------------
+project/
+├── smart_traffic_management_dataset.csv  (original)
+├── preprocess_pipeline.py                (main script)
+├── load_data.py                          (helper functions)
+├── train_data.pkl / .csv                 (70% split)
+├── val_data.pkl / .csv                   (15% split)
+├── test_data.pkl / .csv                  (15% split)
+├── scaler.pkl                            (normalization)
+└── full_preprocessed_data.csv            (complete)
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
