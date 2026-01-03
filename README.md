@@ -47,11 +47,10 @@ Action Space
 🏆 Reward Function
 The reward is designed to balance efficiency and safety:
 
-wait_time /= 100
-queue_len /= 50
-reward = -(0.6 * wait_time + 0.4 * queue_len)
-
-if emergency_detected: reward += 10
+- wait_time /= 100
+- queue_len /= 50
+- reward = -(0.6 * wait_time + 0.4 * queue_len)
+- if emergency_detected: reward += 10
 
 Interpretation:
 - Negative reward: High congestion or waiting time
