@@ -29,18 +29,20 @@ Approach:
 - tqdm – Training progress visualization
 
 🧪 State & Action Design
-🔹 State Features (example)
-    - Vehicle waiting time
-    - Queue length
-    - Traffic density
-    - Emergency vehicle indicator
-    - Time-step information
-etc 
-🔹 Action Space
-    - Discrete actions representing traffic light phases:
-    - North-South green
-    - East-West green
-    - Turning phases (if enabled)
+
+State Features (example)
+- Vehicle waiting time
+- Queue length
+- Traffic density
+- Emergency vehicle indicator
+- Time-step information
+etc
+
+Action Space
+- Discrete actions representing traffic light phases:
+- North-South green
+- East-West green
+- Turning phases (if enabled)
 
 🏆 Reward Function
 The reward is designed to balance efficiency and safety:
@@ -49,8 +51,7 @@ wait_time /= 100
 queue_len /= 50
 reward = -(0.6 * wait_time + 0.4 * queue_len)
 
-if emergency_detected:
-    reward += 10
+if emergency_detected: reward += 10
 
 Interpretation:
 - Negative reward: High congestion or waiting time
@@ -59,14 +60,14 @@ Interpretation:
 
 🔁 Training Strategy:
 Training is performed in multiple phases:
-    Base Training
-    PPO trained from scratch
-    Fixed learning rate
-    Fine-Tuning
-    Continue training from saved checkpoint
-    Lower learning rate for stability
-    Scheduler-Based Training
-Learning rate reduced automatically when performance plateaus improves convergence and reduces reward noise
+- Base Training
+- PPO trained from scratch
+- Fixed learning rate
+- Fine-Tuning
+- Continue training from saved checkpoint
+- Lower learning rate for stability
+- Scheduler-Based Training
+- Learning rate reduced automatically when performance plateaus improves convergence and reduces reward noise
 
 📈 Results & Observations:
 - Rewards initially show high variance (expected in RL)
