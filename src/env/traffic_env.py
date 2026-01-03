@@ -1,4 +1,15 @@
 import numpy as np
+
+data = pd.read_csv("trainrl_data.csv")
+
+if 'timestamp' in data.columns:
+    data = data.drop(columns=['timestamp'])
+
+data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
+
+print("Shape:", data.shape)
+data.head()
+
 class TrafficEnv(gym.Env):
     def __init__(self, data):
         super(TrafficEnv, self).__init__()
